@@ -1,6 +1,7 @@
 import urllib.request
 from bs4 import BeautifulSoup
 from prettytable import PrettyTable
+import json
 
 def table_to_list(table):
     """Converts the HTML table to a list"""
@@ -38,8 +39,11 @@ def print_exams(headings, courses):
     print(t)
 
 if __name__ == '__main__':
+
+    with open('settings.json', 'r') as f:
+        settings = json.load(f)
     # Course numbers you are taking
-    myCRNs = ['91910', '91918', '91995', '91997']
+    myCRNs = settings['crns']
     # The web page with the exam schedule
     html_doc = urllib.request.urlopen('https://www.ufv.ca/arfiles/includes/201709-exam-schedule.htm')
 
