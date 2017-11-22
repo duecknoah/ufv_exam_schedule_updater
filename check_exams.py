@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # Course numbers you are taking
     myCRNs = settings['crns']
     # The web page with the exam schedule
-    html_doc = urllib.request.urlopen('https://www.ufv.ca/arfiles/includes/201709-exam-schedule.htm')
+    html_doc = urllib.request.urlopen(settings['url'])
 
     soup = BeautifulSoup(html_doc, 'lxml')
     table = soup.find('table')
