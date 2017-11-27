@@ -2,6 +2,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 from prettytable import PrettyTable
 import json
+import logging
 
 HEADINGS = (
     'COURSE', 'SECTION', 'CRN', 'Date',
@@ -32,7 +33,7 @@ def table_to_list(table):
 
     return data
 
-def get_course_data_from(crns, all_course_data, crn_index=2):
+def get_exam_data_from(crns, all_course_data, crn_index=2):
     """
     Finds and returns the course #'s (CRNs) matching
     in 'all_course_data'.
@@ -62,7 +63,7 @@ def print_exams(courses):
         t.add_row(row)
     print(t)
 
-def _convert_courses_to_dict_format(courses_as_list):
+def _convert_exams_to_dict_format(courses_as_list):
     # Convert the format:
     # [['CIS 221', 'AB1' ...], ['COMP 251', ...]]
     # to
@@ -77,7 +78,7 @@ def _convert_courses_to_dict_format(courses_as_list):
 
     return course_data_as_dict_in_list
 
-def get_course_data_for_crns(crns):
+def get_exam_data_for_crns(crns):
     """Returns the course data from the course numbers
     as a list,
     where each element is a dict of course info.
@@ -95,10 +96,12 @@ def get_course_data_for_crns(crns):
 
     exam_table = load_exam_table()
     all_c_data = table_to_list(exam_table)
-    course_data_as_list = get_course_data_from(settings['crns'], all_c_data)
+    course_data_as_list = get_exam_data_from(settings['crns'], all_c_data)
 
-    return _convert_courses_to_dict_format(course_data_as_list)
+    return _convert_exams_to_dict_format(course_data_as_list)
 
+def save_exam_data(exams):
+    """Saves the exam """
 
 if __name__ == '__main__':
 
@@ -107,6 +110,5 @@ if __name__ == '__main__':
 
     # Course numbers you are taking
     myCRNs = settings['crns']
-    my_course_data = get_course_data_for_crns(myCRNs)
-    print(my_course_data)
+    my_course_data = get_exam_data_for_crns(myCRNs)
     print_exams(my_course_data)
