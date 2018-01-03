@@ -1,4 +1,4 @@
-import urllib.request
+import urllib.request, urllib.error
 from bs4 import BeautifulSoup
 from prettytable import PrettyTable
 import json
@@ -24,7 +24,11 @@ def load_exam_table():
     with open('settings.json', 'r') as f:
         settings = json.load(f)
     # The web page with the exam schedule
-    html_doc = urllib.request.urlopen(settings['url'])
+    try:
+        html_doc = urllib.request.urlopen(settings['url'])
+    except (urllib.error.URLError, urllib.error.HTTPError) as urlerr:
+        print('Unable to load URL: {}\n{}\nquiting...'.format(settings['url'], urlerr))
+        exit(1)
 
     soup = BeautifulSoup(html_doc, 'lxml')
     return soup.find('table')
@@ -116,7 +120,8 @@ def compare_exam_data(exam_data, old_exam_data):
     for crn_idx, (e_new, e_old) in enumerate(zip(exam_data, old_exam_data)):
         for cat_idx, (cat_new, cat_old) in enumerate(zip(e_new, e_old)):
             if cat_old != cat_new:
-                logging.error('column {} shouldn\'t have changed from {} to {}'.format(cat_idx, cat_old, cat_new))
+                logging.error('column {} shouldn\'t have changed from {} to {}, skipping...'.format(cat_idx, cat_old, cat_new))
+                continue
 
             # Get data from category
             d_old = e_old[cat_old]
@@ -128,7 +133,7 @@ def compare_exam_data(exam_data, old_exam_data):
 
 def save_exam_data(exam_data):
     """Saves most recent exam data for comparing to later"""
-    pickle.dump(exam_data, open(LAST_CHECK_FILENAME, 'wb'))
+    pickle.dump(exam_data, open(LAST_CHECK_FILENAME, 'wb+'))
 
 def check():
     """Checks and updates the user if any exam information
@@ -140,11 +145,16 @@ def check():
     # Course numbers you are taking
     myCRNs = SETTINGS['crns']
     my_exam_data = get_exam_data_for_crns(myCRNs)
-    old_exam_data = pickle.load(open(LAST_CHECK_FILENAME, 'rb'))
-
-    print_exams(my_exam_data)
-    compare_exam_data(my_exam_data, old_exam_data)
-    save_exam_data(my_exam_data)
+    try:
+        old_exam_data = pickle.load(open(LAST_CHECK_FILENAME, 'rb'))
+        print_exams(my_exam_data)
+        compare_exam_data(my_exam_data, old_exam_data)
+        save_exam_data(my_exam_data)
+    except (EOFError, FileNotFoundError):
+        logging.debug('Error reading old exam data, assuming this is first check')
+        print_exams(my_exam_data)
+        save_exam_data(my_exam_data)
+        return
 
 
 if __name__ == '__main__':
