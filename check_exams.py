@@ -3,11 +3,19 @@ from bs4 import BeautifulSoup
 from prettytable import PrettyTable
 import json
 import logging
+import pickle
+
+logging.basicConfig(filename='exam_changes.log', level=logging.INFO,
+                    format='%(asctime)s :: %(message)s')
 
 HEADINGS = (
     'COURSE', 'SECTION', 'CRN', 'Date',
     'TIME', 'Location', 'INSTRUCTOR', 'INFO'
 )
+LAST_CHECK_FILENAME = 'last_check.dat'
+SETTINGS_FILE = 'settings.json'
+with open(SETTINGS_FILE, 'r') as f:
+    SETTINGS = json.load(f)
 
 def load_exam_table():
     """Grabs the exam table from
@@ -92,23 +100,53 @@ def get_exam_data_for_crns(crns):
     """
 
     with open('settings.json', 'r') as f:
-        settings = json.load(f)
+        SETTINGS = json.load(f)
 
     exam_table = load_exam_table()
     all_c_data = table_to_list(exam_table)
-    course_data_as_list = get_exam_data_from(settings['crns'], all_c_data)
+    course_data_as_list = get_exam_data_from(SETTINGS['crns'], all_c_data)
 
     return _convert_exams_to_dict_format(course_data_as_list)
 
-def save_exam_data(exams):
-    """Saves the exam """
-
-if __name__ == '__main__':
-
+def compare_exam_data(exam_data, old_exam_data):
+    """Logs changes made to the exam data"""
     with open('settings.json', 'r') as f:
         settings = json.load(f)
 
+    for crn_idx, (e_new, e_old) in enumerate(zip(exam_data, old_exam_data)):
+        for cat_idx, (cat_new, cat_old) in enumerate(zip(e_new, e_old)):
+            if cat_old != cat_new:
+                logging.error('column {} shouldn\'t have changed from {} to {}'.format(cat_idx, cat_old, cat_new))
+
+            # Get data from category
+            d_old = e_old[cat_old]
+            d_new = e_new[cat_new]
+
+            if d_new != d_old:
+                crn = SETTINGS['crns'][crn_idx]
+                logging.info('CRN {}: {} changed from {} to {}'.format(crn, cat_new, d_old, d_new))
+
+def save_exam_data(exam_data):
+    """Saves most recent exam data for comparing to later"""
+    pickle.dump(exam_data, open(LAST_CHECK_FILENAME, 'wb'))
+
+def check():
+    """Checks and updates the user if any exam information
+    has changed
+    """
+    with open('settings.json', 'r') as f:
+        SETTINGS = json.load(f)
+
     # Course numbers you are taking
-    myCRNs = settings['crns']
-    my_course_data = get_exam_data_for_crns(myCRNs)
-    print_exams(my_course_data)
+    myCRNs = SETTINGS['crns']
+    my_exam_data = get_exam_data_for_crns(myCRNs)
+    old_exam_data = pickle.load(open(LAST_CHECK_FILENAME, 'rb'))
+
+    print_exams(my_exam_data)
+    compare_exam_data(my_exam_data, old_exam_data)
+    save_exam_data(my_exam_data)
+
+
+if __name__ == '__main__':
+    print('Note: This script can automatically keep running by executing autorun.py instead.')
+    check()

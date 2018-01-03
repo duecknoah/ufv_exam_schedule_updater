@@ -13,11 +13,6 @@ INTERVAL = 43200
 
 def check_for_updates():
     threading.Timer(INTERVAL, check_for_updates).start()
-
-    with open('settings.json', 'r') as f:
-        settings = json.load(f)
-
-    exam_data = exams.get_exam_data_for_crns(settings['crns'])
-    exams.print_exams(exam_data)
+    exams.check()
 
 check_for_updates()
