@@ -4,6 +4,7 @@ from prettytable import PrettyTable
 import json
 import logging
 import pickle
+import unicodedata
 
 logging.basicConfig(filename='exam_changes.log', level=logging.INFO,
                     format='%(asctime)s :: %(message)s')
@@ -42,12 +43,23 @@ def table_to_list(table):
 
     data = []
 
+    # Go through the rows in the table, sanitize the
+    # text in the column and append it to the list
     for row in table.find_all('tr')[1:]:
         cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
+        cols = [remove_ctrl_chars(ele.text.strip()) for ele in cols]
         data.append(cols)
 
     return data
+
+def remove_ctrl_chars(str):
+    """Removes control characters from a string and
+    returns then it.
+
+    Control characters are characters such as newlines '\n'
+    where they are used to display the string differently.
+    """
+    return ''.join(ch for ch in str if unicodedata.category(ch)[0]!="C")
 
 def get_exam_data_from(crns, all_course_data, crn_index=2):
     """
