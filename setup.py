@@ -18,8 +18,6 @@ json_data = {
     'email': None,
     'crns': None
 }
-# Email input
-json_data['email'] = input('Email to be notified for changes: ')
 
 # CRNS input
 print('Getting input for your course numbers (CRNs) ...')

@@ -34,7 +34,11 @@ def load_exam_table():
     return soup.find('table')
 
 def table_to_list(table):
-    """Converts the HTML table to a list"""
+    """Converts the HTML table to a list.
+    Each index is its own list containing
+    course data values corresponding to the order of
+    HEADINGS
+    """
 
     data = []
 
@@ -118,18 +122,19 @@ def compare_exam_data(exam_data, old_exam_data):
         settings = json.load(f)
 
     for crn_idx, (e_new, e_old) in enumerate(zip(exam_data, old_exam_data)):
-        for cat_idx, (cat_new, cat_old) in enumerate(zip(e_new, e_old)):
-            if cat_old != cat_new:
-                logging.error('column {} shouldn\'t have changed from {} to {}, skipping...'.format(cat_idx, cat_old, cat_new))
-                continue
-
+        # We are iterating the dictionary which may become out of order.
+        # So we iterate through the HEADINGS tuple and then use that as
+        # the heading to look at for the category of the course
+        for h in HEADINGS:
             # Get data from category
-            d_old = e_old[cat_old]
-            d_new = e_new[cat_new]
+            d_old = e_old[h]
+            d_new = e_new[h]
 
+            # If the old exam data under this heading differs from the new,
+            # log that it changed!
             if d_new != d_old:
                 crn = SETTINGS['crns'][crn_idx]
-                logging.info('CRN {}: {} changed from {} to {}'.format(crn, cat_new, d_old, d_new))
+                logging.info('CRN {}: {} changed from {} to {}'.format(crn, h, d_old, d_new))
 
 def save_exam_data(exam_data):
     """Saves most recent exam data for comparing to later"""
