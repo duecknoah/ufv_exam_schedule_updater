@@ -1,5 +1,5 @@
 import urllib.request, urllib.error
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, FeatureNotFound
 from prettytable import PrettyTable
 import json
 import logging
@@ -45,7 +45,10 @@ def load_exam_table():
         print('Unable to load URL: {}\n{}\nquiting...'.format(settings['url'], urlerr))
         exit(1)
 
-    soup = BeautifulSoup(html_doc, 'lxml')
+    try:
+        soup = BeautifulSoup(html_doc, 'lxml')
+    except FeatureNotFound:
+        soup = BeautifulSoup(html_doc, 'html5lib')
     return soup.find('table')
 
 def table_to_list(table):

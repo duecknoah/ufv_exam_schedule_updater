@@ -9,7 +9,7 @@ setup(name='ufv_exam_schedule_checker',
       author='Noah Dueck',
       author_email='duecknoah@gmail.com',
       install_requires=[
-          'bs4', 'PrettyTable'
+          'bs4', 'PrettyTable', 'lxml'
       ],
       zip_safe=False)
 
