@@ -78,6 +78,8 @@ def get_exam_data_from(crns, all_course_data, crn_index=2):
         for crn in crns:
             if d[crn_index] == crn:
                 c_data.append(d)
+                crns.remove(crn)
+                break
     return c_data
 
 def print_exams(courses):
@@ -129,10 +131,15 @@ def get_exam_data_for_crns(crns):
     return _convert_exams_to_dict_format(course_data_as_list)
 
 def compare_exam_data(exam_data, old_exam_data):
-    """Logs changes made to the exam data"""
+    """Compares two sets of exam data and
+    Logs changes made to the exam data to the logger.
+
+    Returns the data that was changed (changed_data)
+    """
     with open('settings.json', 'r') as f:
         settings = json.load(f)
 
+    changed_data = []
     for crn_idx, (e_new, e_old) in enumerate(zip(exam_data, old_exam_data)):
         # We are iterating the dictionary which may become out of order.
         # So we iterate through the HEADINGS tuple and then use that as
@@ -146,7 +153,10 @@ def compare_exam_data(exam_data, old_exam_data):
             # log that it changed!
             if d_new != d_old:
                 crn = SETTINGS['crns'][crn_idx]
-                logging.info('CRN {}: {} changed from {} to {}'.format(crn, h, d_old, d_new))
+                change_str = 'CRN {}: {} changed from {} to {}'.format(crn, h, d_old, d_new)
+                changed_data.append(change_str)
+                logging.info(change_str)
+    return changed_data
 
 def save_exam_data(exam_data):
     """Saves most recent exam data for comparing to later"""
@@ -155,6 +165,8 @@ def save_exam_data(exam_data):
 def check():
     """Checks and updates the user if any exam information
     has changed
+
+    Returns any changed data in a list
     """
     with open('settings.json', 'r') as f:
         SETTINGS = json.load(f)
@@ -165,14 +177,14 @@ def check():
     try:
         old_exam_data = pickle.load(open(LAST_CHECK_FILENAME, 'rb'))
         print_exams(my_exam_data)
-        compare_exam_data(my_exam_data, old_exam_data)
+        changed_data = compare_exam_data(my_exam_data, old_exam_data)
         save_exam_data(my_exam_data)
+        return changed_data
     except (EOFError, FileNotFoundError):
         logging.debug('Error reading old exam data, assuming this is first check')
         print_exams(my_exam_data)
         save_exam_data(my_exam_data)
-        return
-
+        return None
 
 if __name__ == '__main__':
     print('Note: This script can automatically keep running by executing autorun.py instead.')
