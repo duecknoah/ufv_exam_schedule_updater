@@ -6,8 +6,22 @@ import logging
 import pickle
 import unicodedata
 
-logging.basicConfig(filename='exam_changes.log', level=logging.INFO,
-                    format='%(asctime)s :: %(message)s')
+def setup_exam_logger(logger):
+    """Sets up the logger with the proper settings
+    to be considered the logger for exam changes
+    """
+    logger.setLevel(logging.INFO)
+    # File handler for logging messages to a file
+    fh = logging.FileHandler('exam_changes.log')
+    fh.setLevel(logging.INFO)
+    # Create formatter, then add it to the handlers
+    formatter = logging.Formatter('%(asctime)s :: %(message)s')
+    fh.setFormatter(formatter)
+    # Add handlers to the logger
+    logger.addHandler(fh)
+
+exam_logger = logging.getLogger('exam_changelog')
+setup_exam_logger(exam_logger)
 
 HEADINGS = (
     'COURSE', 'SECTION', 'CRN', 'Date',
@@ -155,7 +169,7 @@ def compare_exam_data(exam_data, old_exam_data):
                 crn = SETTINGS['crns'][crn_idx]
                 change_str = 'CRN {}: {} changed from {} to {}'.format(crn, h, d_old, d_new)
                 changed_data.append(change_str)
-                logging.info(change_str)
+                exam_logger.info(change_str)
     return changed_data
 
 def save_exam_data(exam_data):
