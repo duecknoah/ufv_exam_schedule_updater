@@ -4,9 +4,24 @@ from prettytable import PrettyTable
 import json
 import logging
 import pickle
+import unicodedata
 
-logging.basicConfig(filename='exam_changes.log', level=logging.INFO,
-                    format='%(asctime)s :: %(message)s')
+def setup_exam_logger(logger):
+    """Sets up the logger with the proper settings
+    to be considered the logger for exam changes
+    """
+    logger.setLevel(logging.INFO)
+    # File handler for logging messages to a file
+    fh = logging.FileHandler('exam_changes.log')
+    fh.setLevel(logging.INFO)
+    # Create formatter, then add it to the handlers
+    formatter = logging.Formatter('%(asctime)s :: %(message)s')
+    fh.setFormatter(formatter)
+    # Add handlers to the logger
+    logger.addHandler(fh)
+
+exam_logger = logging.getLogger('exam_changelog')
+setup_exam_logger(exam_logger)
 
 HEADINGS = (
     'COURSE', 'SECTION', 'CRN', 'Date',
@@ -34,16 +49,31 @@ def load_exam_table():
     return soup.find('table')
 
 def table_to_list(table):
-    """Converts the HTML table to a list"""
+    """Converts the HTML table to a list.
+    Each index is its own list containing
+    course data values corresponding to the order of
+    HEADINGS
+    """
 
     data = []
 
+    # Go through the rows in the table, sanitize the
+    # text in the column and append it to the list
     for row in table.find_all('tr')[1:]:
         cols = row.find_all('td')
-        cols = [ele.text.strip() for ele in cols]
+        cols = [remove_ctrl_chars(ele.text.strip()) for ele in cols]
         data.append(cols)
 
     return data
+
+def remove_ctrl_chars(str):
+    """Removes control characters from a string and
+    returns then it.
+
+    Control characters are characters such as newlines '\n'
+    where they are used to display the string differently.
+    """
+    return ''.join(ch for ch in str if unicodedata.category(ch)[0]!="C")
 
 def get_exam_data_from(crns, all_course_data, crn_index=2):
     """
@@ -62,6 +92,8 @@ def get_exam_data_from(crns, all_course_data, crn_index=2):
         for crn in crns:
             if d[crn_index] == crn:
                 c_data.append(d)
+                crns.remove(crn)
+                break
     return c_data
 
 def print_exams(courses):
@@ -113,23 +145,32 @@ def get_exam_data_for_crns(crns):
     return _convert_exams_to_dict_format(course_data_as_list)
 
 def compare_exam_data(exam_data, old_exam_data):
-    """Logs changes made to the exam data"""
+    """Compares two sets of exam data and
+    Logs changes made to the exam data to the logger.
+
+    Returns the data that was changed (changed_data)
+    """
     with open('settings.json', 'r') as f:
         settings = json.load(f)
 
+    changed_data = []
     for crn_idx, (e_new, e_old) in enumerate(zip(exam_data, old_exam_data)):
-        for cat_idx, (cat_new, cat_old) in enumerate(zip(e_new, e_old)):
-            if cat_old != cat_new:
-                logging.error('column {} shouldn\'t have changed from {} to {}, skipping...'.format(cat_idx, cat_old, cat_new))
-                continue
-
+        # We are iterating the dictionary which may become out of order.
+        # So we iterate through the HEADINGS tuple and then use that as
+        # the heading to look at for the category of the course
+        for h in HEADINGS:
             # Get data from category
-            d_old = e_old[cat_old]
-            d_new = e_new[cat_new]
+            d_old = e_old[h]
+            d_new = e_new[h]
 
+            # If the old exam data under this heading differs from the new,
+            # log that it changed!
             if d_new != d_old:
                 crn = SETTINGS['crns'][crn_idx]
-                logging.info('CRN {}: {} changed from {} to {}'.format(crn, cat_new, d_old, d_new))
+                change_str = 'CRN {}: {} changed from {} to {}'.format(crn, h, d_old, d_new)
+                changed_data.append(change_str)
+                exam_logger.info(change_str)
+    return changed_data
 
 def save_exam_data(exam_data):
     """Saves most recent exam data for comparing to later"""
@@ -138,6 +179,8 @@ def save_exam_data(exam_data):
 def check():
     """Checks and updates the user if any exam information
     has changed
+
+    Returns any changed data in a list
     """
     with open('settings.json', 'r') as f:
         SETTINGS = json.load(f)
@@ -148,14 +191,14 @@ def check():
     try:
         old_exam_data = pickle.load(open(LAST_CHECK_FILENAME, 'rb'))
         print_exams(my_exam_data)
-        compare_exam_data(my_exam_data, old_exam_data)
+        changed_data = compare_exam_data(my_exam_data, old_exam_data)
         save_exam_data(my_exam_data)
+        return changed_data
     except (EOFError, FileNotFoundError):
         logging.debug('Error reading old exam data, assuming this is first check')
         print_exams(my_exam_data)
         save_exam_data(my_exam_data)
-        return
-
+        return None
 
 if __name__ == '__main__':
     print('Note: This script can automatically keep running by executing autorun.py instead.')
