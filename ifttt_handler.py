@@ -4,6 +4,7 @@ import json
 with open('settings.json', 'r') as f:
     SETTINGS = json.load(f)
 
+
 def post_event(event_name, secret_key, val1=None, val2=None, val3=None):
     """Posts data to IFTTT via webhooks.
     IFTTT webhooks: https://ifttt.com/maker_webhooks
@@ -11,7 +12,7 @@ def post_event(event_name, secret_key, val1=None, val2=None, val3=None):
     event_name (str): the name of the IFTTT event
     secret_key (str): your IFTTT secret key.
     """
-    report={}
+    report = {}
 
     if val1 is not None:
         report['value1'] = val1
@@ -21,6 +22,7 @@ def post_event(event_name, secret_key, val1=None, val2=None, val3=None):
         report['value3'] = val3
     requests.post('https://maker.ifttt.com/trigger/{}/with/key/'
                   '{}'.format(event_name, secret_key), data=report)
+
 
 def post_exam_changes(exam_changes):
     """Sends the new exam data to IFTTT

@@ -7,7 +7,8 @@ import threading
 import check_exams as exams
 import sys
 
-def check_for_updates(interval=43200, on_change_callback=None):
+
+def check_for_updates(interval=3600, on_change_callback=None):
     """Checks for exam updates every 'interval' seconds
     If any exam data has changed sinced last check, then that data
     is passed through the callback function as:
@@ -22,9 +23,11 @@ def check_for_updates(interval=43200, on_change_callback=None):
         on_change_callback(changed_data)
 
     # Restart the thread timer to run again
-    threading.Timer(interval, check_for_updates, [interval]).start()
+    threading.Timer(interval, check_for_updates, [
+                    interval, on_change_callback]).start()
     INTERVAL_AS_HOURS = interval / 60 / 60
     print('Running again in {0:.4f} hours'.format(INTERVAL_AS_HOURS))
+
 
 if __name__ == '__main__':
     # The amount of seconds before re checking changes
