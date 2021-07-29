@@ -1,6 +1,8 @@
 # UFV exam schedule watcher
 Don't ever want to miss an exam? This tool notifies your phone when one of your exam times was updated, added, or created.
 
+![Notification phone](images/combine.jpg)
+
 ## Setup
 ### IFTTT (part 1)
 1. Setup [IFTT by creating an account (or using a google account)](https://ifttt.com/login)
@@ -15,4 +17,6 @@ Don't ever want to miss an exam? This tool notifies your phone when one of your 
 4. Enter your secret key which is the text after **https://maker.ifttt.com/use/** on the page.
 
 Finally run it `python runner.py`
-This will auto check every hour and notify you accordingly!
+This will auto check every hour and notify you accordingly! <br />
+
+![terminal preview](images/preview.png)
